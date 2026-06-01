@@ -10,12 +10,20 @@ type User struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"username" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
 }
 
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required,min=4"`
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
+type RegisterResponse struct {
+	Token string `json:"token"`
 }
