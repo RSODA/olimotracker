@@ -14,7 +14,7 @@ func New(env string) *slog.Logger {
 			Level: slog.LevelInfo,
 		})
 	case "dev":
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		handler = NewPrettyHandler(&slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})
 	default:
