@@ -1,6 +1,6 @@
 services:
   pg:
-    image: postgres:16
+    image: postgres:18.4
     restart: always
     environment:
       POSTGRES_USER: ${PG_USER}
@@ -9,7 +9,7 @@ services:
     ports:
       - "${PG_PORT}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
 
 volumes:
   pgdata:

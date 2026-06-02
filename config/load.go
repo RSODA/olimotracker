@@ -7,13 +7,20 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	Postgres PostgresConfig
+	Http        HttpConfig
+	Postgres    PostgresConfig
+	LoggerLevel string `env:"LOGGER_LEVEL" env-required:"true"`
+	JWT         JWTConfig
 }
 
-type AppConfig struct {
-	Host string `env:"APP_HOST" env-required:"true"`
-	Port int    `env:"APP_PORT" env-required:"true"`
+type HttpConfig struct {
+	Host string `env:"HTTP_HOST" env-required:"true"`
+	Port int    `env:"HTTP_PORT" env-required:"true"`
+}
+
+type JWTConfig struct {
+	Secret  string `env:"JWT_SECRET" env-required:"true"`
+	JWT_TTL int    `env:"JWT_TTL" env-required:"true"`
 }
 
 type PostgresConfig struct {
@@ -35,7 +42,11 @@ func Load() (*Config, error) {
 }
 
 func (p PostgresConfig) DSN() string {
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disbale",
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		p.Host, p.Port, p.User, p.Password, p.DB,
 	)
+}
+
+func (h HttpConfig) Addr() string {
+	return fmt.Sprintf("%s:%d", h.Host, h.Port)
 }
