@@ -1,0 +1,205 @@
+package sessions
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"olimotracker/pkg/db"
+
+	"github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
+)
+
+type Repository interface {
+	Create(ctx context.Context, session *Session) (*uuid.UUID, error)
+	GetByID(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID) (*SessionResponse, error)
+	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*SessionResponse, error)
+	GetByCategoryID(ctx context.Context, categoryID uuid.UUID, userID uuid.UUID) ([]*SessionResponse, error)
+	Update(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID, session *Session) (*uuid.UUID, error)
+	Delete(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID) error
+}
+
+type repository struct {
+	db db.DBClient
+	l  *slog.Logger
+}
+
+func NewRepository(db db.DBClient, l *slog.Logger) Repository {
+	return &repository{db: db, l: l}
+}
+
+func (r *repository) Create(ctx context.Context, session *Session) (*uuid.UUID, error) {
+	var id uuid.UUID
+
+	builder := squirrel.Insert(db.SessionsTable).
+		Columns(db.SessionsCategoryIDColumn, db.SessionsUserIDColumn, db.SessionsDurationColumn, db.SessionsNotesColumn).
+		Values(session.CategoryID, session.UserID, session.Duration, session.Note).
+		Suffix("RETURNING " + db.SessionsIDColumn).
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return nil, err
+	}
+
+	err = r.db.QueryRow(ctx, query, args...).Scan(&id)
+	if err != nil {
+		r.l.Error("error scanning row: ", "err", err)
+		return nil, err
+	}
+
+	return &id, nil
+}
+
+func (r *repository) GetByID(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID) (*SessionResponse, error) {
+	var session SessionResponse
+
+	builder := squirrel.Select(fmt.Sprintf("s.%v, s.%v, s.%v, s.%v, s.%v, s.%v, c.%v, c.%v", db.SessionsIDColumn, db.SessionsUserIDColumn, db.SessionsCategoryIDColumn, db.SessionsDurationColumn, db.SessionsNotesColumn, db.SessionsCreatedAtColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn)).
+		From(db.SessionsTable + " s").
+		LeftJoin(fmt.Sprintf("%v c ON c.%v = s.%v", db.CategoriesTable, db.CategoriesIDColumn, db.SessionsCategoryIDColumn)).
+		Where(squirrel.Eq{"s." + db.SessionsIDColumn: sessionID, "s." + db.SessionsUserIDColumn: userID}).
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return nil, err
+	}
+
+	err = r.db.QueryRow(ctx, query, args...).Scan(&session.ID, &session.UserID, &session.CategoryID, &session.Duration, &session.Note, &session.CreatedAt, &session.CategoryTitle, &session.CategoryColor)
+	if err != nil {
+		r.l.Error("error scanning row: ", "err", err)
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func (r *repository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]*SessionResponse, error) {
+	var sessions []*SessionResponse
+
+	builder := squirrel.Select(fmt.Sprintf("s.%v, s.%v, s.%v, s.%v, s.%v, s.%v, c.%v, c.%v", db.SessionsIDColumn, db.SessionsUserIDColumn, db.SessionsCategoryIDColumn, db.SessionsDurationColumn, db.SessionsNotesColumn, db.SessionsCreatedAtColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn)).
+		From(db.SessionsTable + " s").
+		LeftJoin(fmt.Sprintf("%v c ON c.%v = s.%v", db.CategoriesTable, db.CategoriesIDColumn, db.SessionsCategoryIDColumn)).
+		Where(squirrel.Eq{"s." + db.SessionsUserIDColumn: userID}).
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return nil, err
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		r.l.Error("error querying database: ", "err", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var session SessionResponse
+		err := rows.Scan(&session.ID, &session.UserID, &session.CategoryID, &session.Duration, &session.Note, &session.CreatedAt, &session.CategoryTitle, &session.CategoryColor)
+		if err != nil {
+			r.l.Error("error scanning row: ", "err", err)
+			return nil, err
+		}
+		sessions = append(sessions, &session)
+	}
+
+	return sessions, nil
+}
+
+func (r *repository) GetByCategoryID(ctx context.Context, categoryID uuid.UUID, userID uuid.UUID) ([]*SessionResponse, error) {
+	var sessions []*SessionResponse
+
+	builder := squirrel.Select(fmt.Sprintf("s.%v, s.%v, s.%v, s.%v, s.%v, s.%v, c.%v, c.%v", db.SessionsIDColumn, db.SessionsUserIDColumn, db.SessionsCategoryIDColumn, db.SessionsDurationColumn, db.SessionsNotesColumn, db.SessionsCreatedAtColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn)).
+		From(db.SessionsTable + " s").
+		LeftJoin(fmt.Sprintf("%v c ON c.%v = s.%v", db.CategoriesTable, db.CategoriesIDColumn, db.SessionsCategoryIDColumn)).
+		Where(squirrel.Eq{
+			"s." + db.SessionsCategoryIDColumn: categoryID,
+			"s." + db.SessionsUserIDColumn:     userID,
+		}).
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return nil, err
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		r.l.Error("error querying database: ", "err", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var session SessionResponse
+		err := rows.Scan(&session.ID, &session.UserID, &session.CategoryID, &session.Duration, &session.Note, &session.CreatedAt, &session.CategoryTitle, &session.CategoryColor)
+		if err != nil {
+			r.l.Error("error scanning row: ", "err", err)
+			return nil, err
+		}
+		sessions = append(sessions, &session)
+	}
+
+	return sessions, nil
+}
+
+func (r *repository) Update(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID, session *Session) (*uuid.UUID, error) {
+	var id uuid.UUID
+
+	builder := squirrel.Update(db.SessionsTable).
+		PlaceholderFormat(squirrel.Dollar).
+		Where(squirrel.Eq{db.SessionsIDColumn: sessionID, db.SessionsUserIDColumn: userID}).
+		Suffix("RETURNING " + db.CategoriesIDColumn)
+
+	if session.CategoryID != nil {
+		builder = builder.Set(db.SessionsCategoryIDColumn, session.CategoryID)
+	}
+
+	if session.Duration > 0 {
+		builder = builder.Set(db.SessionsDurationColumn, session.Duration)
+	}
+
+	if session.Note != nil {
+		builder = builder.Set(db.SessionsNotesColumn, session.Note)
+	}
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return nil, err
+	}
+
+	err = r.db.QueryRow(ctx, query, args...).Scan(&id)
+	if err != nil {
+		r.l.Error("error scanning row: ", "err", err)
+		return nil, err
+	}
+
+	return &id, nil
+}
+
+func (r *repository) Delete(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID) error {
+	builder := squirrel.Delete(db.SessionsTable).
+		Where(squirrel.Eq{db.SessionsIDColumn: sessionID, db.SessionsUserIDColumn: userID}).
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return err
+	}
+
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		r.l.Error("error executing query: ", "err", err)
+		return err
+	}
+
+	return nil
+}
