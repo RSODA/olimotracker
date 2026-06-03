@@ -4,9 +4,11 @@ import (
 	"context"
 	"olimotracker/config"
 	"olimotracker/internal/auth"
+	"olimotracker/internal/categories"
 	"olimotracker/pkg/db"
 	"olimotracker/pkg/jwttoken"
 	"olimotracker/pkg/logger"
+	"olimotracker/pkg/middleware"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -44,13 +46,22 @@ func main() {
 
 	log.Info("postgres ping success")
 
-	jwt := jwttoken.NewTokenGenerator(cfg.JWT.Secret, time.Duration(cfg.JWT.JWT_TTL))
+	jwtTTL := time.Duration(cfg.JWT.JWT_TTL) * time.Hour
+	jwt := jwttoken.NewTokenGenerator(cfg.JWT.Secret, jwtTTL)
+
+	middleware := middleware.NewMiddlware(jwt, log)
 
 	authRepo := auth.NewRepository(database, log)
 	authService := auth.NewService(authRepo, log, jwt)
 	authHandler := auth.NewHandler(authService)
 
 	authHandler.RegisterRoutes(r)
+
+	categoriesRepo := categories.NewRepository(database, log)
+	categoriesService := categories.NewService(categoriesRepo, log)
+	categoriesHandler := categories.NewHandler(categoriesService, log, middleware)
+
+	categoriesHandler.RegisterRoutes(r)
 
 	r.Run(cfg.Http.Addr())
 }
