@@ -3,6 +3,7 @@ package sessions
 import (
 	"context"
 	"log/slog"
+	"olimotracker/internal/stats"
 
 	"github.com/google/uuid"
 )
@@ -17,12 +18,13 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
-	l    *slog.Logger
+	repo         Repository
+	l            *slog.Logger
+	statsService stats.Service
 }
 
-func NewService(repo Repository, l *slog.Logger) Service {
-	return &service{repo: repo, l: l}
+func NewService(repo Repository, l *slog.Logger, statsService stats.Service) Service {
+	return &service{repo: repo, l: l, statsService: statsService}
 }
 
 func (s *service) Create(ctx context.Context, userID *uuid.UUID, req *CreateSessionRequest) (*uuid.UUID, error) {
@@ -36,6 +38,11 @@ func (s *service) Create(ctx context.Context, userID *uuid.UUID, req *CreateSess
 	res, err := s.repo.Create(ctx, session)
 	if err != nil {
 		return nil, err
+	}
+
+	err = s.statsService.RecalculateStats(ctx, userID, int(session.Duration))
+	if err != nil {
+		s.l.Error("failed to recalculate stats", slog.Any("error", err))
 	}
 
 	return res, nil
