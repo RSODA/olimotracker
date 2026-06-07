@@ -85,9 +85,21 @@ func (s *service) Update(ctx context.Context, sessionID *uuid.UUID, userID *uuid
 		session.Duration = *req.Duration
 	}
 
+	oldStats, err := s.repo.GetByID(ctx, *sessionID, *userID)
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := s.repo.Update(ctx, *sessionID, *userID, session)
 	if err != nil {
 		return nil, err
+	}
+
+	if req.Duration != nil {
+		err = s.statsService.AdjustStats(ctx, userID, oldStats.Duration, *req.Duration)
+		if err != nil {
+			s.l.Error("failed to adjust stats", "sessionID", sessionID, "userID", userID, "err", err)
+		}
 	}
 
 	return res, nil

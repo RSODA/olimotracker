@@ -11,6 +11,7 @@ import (
 )
 
 type Service interface {
+	AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuration int, newDuration int) error
 	RecalculateStats(ctx context.Context, userID *uuid.UUID, sessionDuration int) error
 	GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStats, error)
 }
@@ -85,6 +86,42 @@ func (s *service) GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStat
 	}
 
 	return stats, nil
+}
+
+func (s *service) AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuration int, newDuration int) error {
+	stats, err := s.repo.GetByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	diff := oldDuration - newDuration
+	newXp := stats.XP + diff
+
+	if newXp < 0 {
+		newXp = 0
+	}
+
+	newTotalMinutes := stats.TotalMinutes + newDuration
+	if newTotalMinutes < 0 {
+		newTotalMinutes = 0
+	}
+
+	err = s.repo.Update(ctx, &UserStats{
+		UserID:        *userID,
+		TotalMinutes:  newTotalMinutes,
+		XP:            newXp,
+		Level:         levelLogic(newXp),
+		CurrentStreak: stats.CurrentStreak,
+		MaxStreak:     stats.MaxStreak,
+		LastSessionAt: stats.LastSessionAt,
+	})
+
+	if err != nil {
+		s.l.Error("error updating stats", "userID", userID, "err", err)
+		return err
+	}
+
+	return nil
 }
 
 func calcStreak(stats *UserStats) int {
