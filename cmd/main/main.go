@@ -7,6 +7,7 @@ import (
 	"olimotracker/internal/categories"
 	"olimotracker/internal/sessions"
 	"olimotracker/internal/stats"
+	"olimotracker/internal/user"
 	"olimotracker/pkg/db"
 	"olimotracker/pkg/jwttoken"
 	"olimotracker/pkg/logger"
@@ -76,6 +77,12 @@ func main() {
 	sessionsHandler := sessions.NewHandler(sessionsService, log, middleware)
 
 	sessionsHandler.RegisterRoutes(r)
+
+	userRepo := user.NewRepository(database, log)
+	userService := user.NewService(userRepo, log)
+	userHandler := user.NewHandler(userService, middleware)
+
+	userHandler.RegisterRoutes(r)
 
 	r.Run(cfg.Http.Addr())
 }
