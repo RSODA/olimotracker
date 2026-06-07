@@ -55,8 +55,8 @@ func (r *repo) GetByUserID(ctx context.Context, id *uuid.UUID) (*UserStats, erro
 
 func (r *repo) Create(ctx context.Context, stats *UserStats) error {
 	builder := squirrel.Insert(db.UserStatsTable).
-		Columns(db.UserStatsUserIDColumn, db.UserStatsTotalHoursColumn, db.UserStatsCurrentStreakColumn, db.UserStatsMaxStreakColumn, db.UserStatsLevelColumn, db.UserStatsXPColumn, db.UserStatsCreatedAtColumn, db.UserStatsUpdatedAtColumn, db.UserStatsLastSessionsAtColumn).
-		Values(stats.UserID, stats.TotalMinutes, stats.CurrentStreak, stats.MaxStreak, stats.Level, stats.XP, stats.CreatedAt, stats.UpdatedAt).
+		Columns(db.UserStatsUserIDColumn, db.UserStatsTotalHoursColumn, db.UserStatsCurrentStreakColumn, db.UserStatsMaxStreakColumn, db.UserStatsLevelColumn, db.UserStatsXPColumn, db.UserStatsUpdatedAtColumn, db.UserStatsLastSessionsAtColumn).
+		Values(stats.UserID, stats.TotalMinutes, stats.CurrentStreak, stats.MaxStreak, stats.Level, stats.XP, stats.UpdatedAt, stats.LastSessionAt).
 		PlaceholderFormat(squirrel.Dollar)
 
 	query, args, err := builder.ToSql()

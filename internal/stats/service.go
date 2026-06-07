@@ -13,7 +13,7 @@ import (
 type Service interface {
 	AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuration int, newDuration int) error
 	RecalculateStats(ctx context.Context, userID *uuid.UUID, sessionDuration int) error
-	GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStats, error)
+	GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStatsResponse, error)
 }
 
 type service struct {
@@ -75,7 +75,9 @@ func (s *service) RecalculateStats(ctx context.Context, userID *uuid.UUID, sessi
 	return nil
 }
 
-func (s *service) GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStats, error) {
+func (s *service) GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStatsResponse, error) {
+	var res UserStatsResponse
+
 	stats, err := s.repo.GetByUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -85,7 +87,19 @@ func (s *service) GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStat
 		return nil, err
 	}
 
-	return stats, nil
+	res = UserStatsResponse{
+		UserID:        stats.UserID,
+		Username:      stats.Username,
+		TotalMinutes:  stats.TotalMinutes,
+		XP:            stats.XP,
+		Level:         stats.Level,
+		CurrentStreak: stats.CurrentStreak,
+		MaxStreak:     stats.MaxStreak,
+		GalaxySeed:    stats.GalaxySeed,
+		LastSessionAt: stats.LastSessionAt,
+	}
+
+	return &res, nil
 }
 
 func (s *service) AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuration int, newDuration int) error {
