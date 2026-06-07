@@ -73,7 +73,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, gin.H{"session": res})
 }
 
 func (h *Handler) GetByUserID(c *gin.Context) {
