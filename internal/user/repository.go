@@ -11,6 +11,7 @@ import (
 
 type Repository interface {
 	GetUserByID(ctx context.Context, id *uuid.UUID) (*User, error)
+	UpdateAPIKeyByUserID(ctx context.Context, id *uuid.UUID, newAPI *uuid.UUID) error
 }
 
 type repo struct {
@@ -45,4 +46,25 @@ func (r *repo) GetUserByID(ctx context.Context, id *uuid.UUID) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func (r *repo) UpdateAPIKeyByUserID(ctx context.Context, id *uuid.UUID, newAPI *uuid.UUID) error {
+	builder := squirrel.Update(db.UsersTable).
+		Set(db.UsersAPIKeyColumn, newAPI).
+		Where(squirrel.Eq{db.UsersIDColumn: id}).
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return err
+	}
+
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		r.l.Error("error executing query: ", "err", err)
+		return err
+	}
+
+	return nil
 }

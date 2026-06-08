@@ -9,6 +9,7 @@ import (
 
 type Service interface {
 	GetUserByID(ctx context.Context, id *uuid.UUID) (*User, error)
+	UpdateAPIKeyByID(ctx context.Context, id *uuid.UUID) error
 }
 
 type service struct {
@@ -29,4 +30,15 @@ func (s *service) GetUserByID(ctx context.Context, id *uuid.UUID) (*User, error)
 		return nil, err
 	}
 	return user, nil
+}
+
+func (s *service) UpdateAPIKeyByID(ctx context.Context, id *uuid.UUID) error {
+	newAPI := uuid.New()
+
+	err := s.repo.UpdateAPIKeyByUserID(ctx, id, &newAPI)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
