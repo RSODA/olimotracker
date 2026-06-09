@@ -32,6 +32,11 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
+func (h *Handler) RegisterAPIRoutes(r *gin.RouterGroup) {
+	r.POST("/track", h.Create)
+	r.GET("/sessions", h.GetByUserID)
+}
+
 func (h *Handler) Create(c *gin.Context) {
 	var req CreateSessionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

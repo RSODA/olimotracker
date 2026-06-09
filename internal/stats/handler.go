@@ -18,7 +18,11 @@ func NewHandler(s Service, mw *middleware.Middleware) *handler {
 }
 
 func (h *handler) RegisterRoutes(r *gin.Engine) {
-	r.GET("/stats/:userID", h.mw.AuthMiddleware(), h.getMyStats)
+	r.GET("/stats/me", h.mw.AuthMiddleware(), h.getMyStats)
+}
+
+func (h *handler) RegisterAPIRoutes(r *gin.RouterGroup) {
+	r.GET("/stats", h.getMyStats)
 }
 
 func (h *handler) getMyStats(c *gin.Context) {

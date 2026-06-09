@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"olimotracker/config"
+	"olimotracker/internal/api"
 	"olimotracker/internal/auth"
 	"olimotracker/internal/categories"
 	"olimotracker/internal/sessions"
@@ -52,7 +53,11 @@ func main() {
 	jwtTTL := time.Duration(cfg.JWT.JWT_TTL) * time.Hour
 	jwt := jwttoken.NewTokenGenerator(cfg.JWT.Secret, jwtTTL)
 
-	middleware := middleware.NewMiddlware(jwt, log)
+	apiRepo := api.NewRepository(database, log)
+	middleware := middleware.NewMiddlware(jwt, log, apiRepo)
+
+	apiV1 := r.Group("/api/v1")
+	apiV1.Use(middleware.APIKeyMiddleware())
 
 	authRepo := auth.NewRepository(database, log)
 	authService := auth.NewService(authRepo, log, jwt)
@@ -65,18 +70,21 @@ func main() {
 	categoriesHandler := categories.NewHandler(categoriesService, log, middleware)
 
 	categoriesHandler.RegisterRoutes(r)
+	categoriesHandler.RegisterAPIRoutes(apiV1)
 
 	statsRepo := stats.NewRepo(database, log)
 	statsService := stats.NewService(statsRepo, log)
 	statsHandler := stats.NewHandler(statsService, middleware)
 
 	statsHandler.RegisterRoutes(r)
+	statsHandler.RegisterAPIRoutes(apiV1)
 
 	sessionsRepo := sessions.NewRepository(database, log)
 	sessionsService := sessions.NewService(sessionsRepo, log, statsService)
 	sessionsHandler := sessions.NewHandler(sessionsService, log, middleware)
 
 	sessionsHandler.RegisterRoutes(r)
+	sessionsHandler.RegisterAPIRoutes(apiV1)
 
 	userRepo := user.NewRepository(database, log)
 	userService := user.NewService(userRepo, log)

@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"olimotracker/pkg/middleware"
-	"olimotracker/pkg/parse"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -17,6 +16,7 @@ type Handler interface {
 	Update(c *gin.Context)
 	Delete(c *gin.Context)
 	RegisterRoutes(r *gin.Engine)
+	RegisterAPIRoutes(r *gin.RouterGroup)
 }
 
 type handler struct {
@@ -74,8 +74,9 @@ func (h *handler) GetCategoriesByUserID(c *gin.Context) {
 
 func (h *handler) GetCategoryByID(c *gin.Context) {
 	categoryID := c.Param("id")
-	categoryUUID, err := parse.ParseUUID(categoryID, h.l)
+	categoryUUID, err := uuid.Parse(categoryID)
 	if err != nil {
+		h.l.Error("error parsing categoryID to uuid", "categoryID", categoryID, "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -105,8 +106,9 @@ func (h *handler) Update(c *gin.Context) {
 
 	categoryID := c.Param("id")
 
-	categoryUUID, err := parse.ParseUUID(categoryID, h.l)
+	categoryUUID, err := uuid.Parse(categoryID)
 	if err != nil {
+		h.l.Error("error parsing categoryID to uuid", "categoryID", categoryID, "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -136,8 +138,9 @@ func (h *handler) Update(c *gin.Context) {
 func (h *handler) Delete(c *gin.Context) {
 	categoryID := c.Param("id")
 
-	categoryUUID, err := parse.ParseUUID(categoryID, h.l)
+	categoryUUID, err := uuid.Parse(categoryID)
 	if err != nil {
+		h.l.Error("error parsing categoryID to uuid", "categoryID", categoryID, "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -165,5 +168,12 @@ func (h *handler) RegisterRoutes(r *gin.Engine) {
 		catergories.GET("/:id", h.mw.AuthMiddleware(), h.GetCategoryByID)
 		catergories.PUT("/:id", h.mw.AuthMiddleware(), h.Update)
 		catergories.DELETE("/:id", h.mw.AuthMiddleware(), h.Delete)
+	}
+}
+
+func (h *handler) RegisterAPIRoutes(r *gin.RouterGroup) {
+	categories := r.Group("/categories")
+	{
+		categories.GET("/", h.GetCategoriesByUserID)
 	}
 }
