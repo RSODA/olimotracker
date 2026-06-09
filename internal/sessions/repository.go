@@ -17,6 +17,7 @@ type Repository interface {
 	GetByCategoryID(ctx context.Context, categoryID uuid.UUID, userID uuid.UUID) ([]*SessionResponse, error)
 	Update(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID, session *Session) (*uuid.UUID, error)
 	Delete(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID) error
+	GetMinutesByCategoryForUser(ctx context.Context, userID *uuid.UUID) ([]CategoryMinutes, error)
 }
 
 type repository struct {
@@ -202,4 +203,50 @@ func (r *repository) Delete(ctx context.Context, sessionID uuid.UUID, userID uui
 	}
 
 	return nil
+}
+
+func (r *repository) GetMinutesByCategoryForUser(ctx context.Context, userID *uuid.UUID) ([]CategoryMinutes, error) {
+	builder := squirrel.Select(fmt.Sprintf("c.%v, c.%v, c.%v, SUM(s.%v) AS minutes", db.CategoriesIDColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn, db.SessionsDurationColumn)).
+		From(db.SessionsTable + " s").
+		Where(squirrel.Eq{"s." + db.SessionsUserIDColumn: *userID}).
+		Join(fmt.Sprintf("%v c ON s.%v = c.%v", db.CategoriesTable, db.SessionsCategoryIDColumn, db.CategoriesIDColumn)).
+		PlaceholderFormat(squirrel.Dollar).
+		GroupBy(fmt.Sprintf("c.%v, c.%v, c.%v", db.CategoriesIDColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn))
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return nil, err
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		r.l.Error("error executing query: ", "err", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []CategoryMinutes
+	for rows.Next() {
+		var categoryTitle string
+		var categoryID uuid.UUID
+		var categoryColor string
+		var minutes int
+		if err := rows.Scan(&categoryID, &categoryTitle, &categoryColor, &minutes); err != nil {
+			r.l.Error("error scanning row: ", "err", err)
+			return nil, err
+		}
+		result = append(result, CategoryMinutes{
+			CategoryID:    categoryID,
+			CategoryTitle: categoryTitle,
+			CategoryColor: categoryColor,
+			Minutes:       minutes,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		r.l.Error("error iterating rows: ", "err", err)
+		return nil, err
+	}
+
+	return result, nil
 }

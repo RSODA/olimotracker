@@ -17,6 +17,13 @@ type SessionResponse struct {
 	CreatedAt     time.Time  `json:"created_at"`
 }
 
+type CategoryMinutes struct {
+	CategoryID    uuid.UUID
+	CategoryTitle string
+	CategoryColor string
+	Minutes       int
+}
+
 type Session struct {
 	ID         uuid.UUID
 	UserID     uuid.UUID

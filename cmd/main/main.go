@@ -6,6 +6,7 @@ import (
 	"olimotracker/internal/api"
 	"olimotracker/internal/auth"
 	"olimotracker/internal/categories"
+	"olimotracker/internal/galaxy"
 	"olimotracker/internal/sessions"
 	"olimotracker/internal/stats"
 	"olimotracker/internal/user"
@@ -91,6 +92,10 @@ func main() {
 	userHandler := user.NewHandler(userService, middleware)
 
 	userHandler.RegisterRoutes(r)
+
+	galaxyService := galaxy.NewService(statsService, sessionsRepo, log)
+	galaxyHandler := galaxy.NewHandler(galaxyService, middleware)
+	galaxyHandler.RegisterRoutes(r)
 
 	r.Run(cfg.Http.Addr())
 }
