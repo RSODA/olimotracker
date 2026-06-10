@@ -10,6 +10,7 @@ import (
 	"olimotracker/internal/sessions"
 	"olimotracker/internal/stats"
 	"olimotracker/internal/user"
+	cr "olimotracker/pkg/cron"
 	"olimotracker/pkg/db"
 	"olimotracker/pkg/jwttoken"
 	"olimotracker/pkg/logger"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
@@ -93,9 +95,18 @@ func main() {
 
 	userHandler.RegisterRoutes(r)
 
-	galaxyService := galaxy.NewService(statsService, sessionsRepo, log)
+	galaxyRepo := galaxy.NewRepository(database, log)
+	galaxyService := galaxy.NewService(statsService, sessionsRepo, log, galaxyRepo)
 	galaxyHandler := galaxy.NewHandler(galaxyService, middleware)
 	galaxyHandler.RegisterRoutes(r)
+
+	c := cron.New()
+
+	cron := cr.NewCron(c, log, galaxyService)
+	cron.AddsCronJobs()
+
+	c.Start()
+	defer c.Stop()
 
 	r.Run(cfg.Http.Addr())
 }

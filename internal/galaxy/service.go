@@ -11,19 +11,22 @@ import (
 
 type Service interface {
 	GetGalaxy(ctx context.Context, userID *uuid.UUID) (*GalaxyResponse, error)
+	RegenerateAllSeeds(ctx context.Context) error
 }
 
 type service struct {
 	statsService stats.Service
 	sessionsRepo sessions.Repository
 	l            *slog.Logger
+	se           Repository
 }
 
-func NewService(statsService stats.Service, sessionsRepo sessions.Repository, l *slog.Logger) Service {
+func NewService(statsService stats.Service, sessionsRepo sessions.Repository, l *slog.Logger, se Repository) Service {
 	return &service{
 		statsService: statsService,
 		sessionsRepo: sessionsRepo,
 		l:            l,
+		se:           se,
 	}
 }
 
@@ -48,4 +51,13 @@ func (s *service) GetGalaxy(ctx context.Context, userID *uuid.UUID) (*GalaxyResp
 		Level:         stats.Level,
 		Categories:    categories,
 	}, nil
+}
+
+func (s *service) RegenerateAllSeeds(ctx context.Context) error {
+	err := s.se.UpdateAllSeeds(ctx)
+	if err != nil {
+		s.l.Error("failed to update all seeds", "error", err)
+		return err
+	}
+	return nil
 }
