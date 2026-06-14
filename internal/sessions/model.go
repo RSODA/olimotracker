@@ -24,6 +24,11 @@ type CategoryMinutes struct {
 	Minutes       int
 }
 
+type SessionsMinutes struct {
+	Minutes int       `json:"minutes"`
+	Date    time.Time `json:"date"`
+}
+
 type Session struct {
 	ID         uuid.UUID
 	UserID     uuid.UUID

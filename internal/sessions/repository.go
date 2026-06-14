@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"olimotracker/pkg/db"
+	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -18,6 +19,7 @@ type Repository interface {
 	Update(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID, session *Session) (*uuid.UUID, error)
 	Delete(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID) error
 	GetMinutesByCategoryForUser(ctx context.Context, userID *uuid.UUID) ([]CategoryMinutes, error)
+	GetMinutesBySessionForUser(ctx context.Context, userID *uuid.UUID) ([]SessionsMinutes, error)
 }
 
 type repository struct {
@@ -246,6 +248,44 @@ func (r *repository) GetMinutesByCategoryForUser(ctx context.Context, userID *uu
 	if err := rows.Err(); err != nil {
 		r.l.Error("error iterating rows: ", "err", err)
 		return nil, err
+	}
+
+	return result, nil
+}
+
+func (r *repository) GetMinutesBySessionForUser(ctx context.Context, userID *uuid.UUID) ([]SessionsMinutes, error) {
+	builder := squirrel.Select(fmt.Sprintf("SUM(%v), DATE(%v) AS day", db.SessionsDurationColumn, db.SessionsCreatedAtColumn)).
+		From(db.SessionsTable).
+		Where(squirrel.Eq{db.SessionsUserIDColumn: userID}).
+		GroupBy("DATE(" + db.SessionsCreatedAtColumn + ")").
+		OrderBy("day").
+		PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		r.l.Error("error building query: ", "err", err)
+		return nil, err
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		r.l.Error("error executing query: ", "err", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []SessionsMinutes
+	for rows.Next() {
+		var minutes int
+		var date time.Time
+		if err := rows.Scan(&minutes, &date); err != nil {
+			r.l.Error("error scanning row: ", "err", err)
+			return nil, err
+		}
+		result = append(result, SessionsMinutes{
+			Minutes: minutes,
+			Date:    date,
+		})
 	}
 
 	return result, nil

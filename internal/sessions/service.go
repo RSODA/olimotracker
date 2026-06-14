@@ -15,6 +15,7 @@ type Service interface {
 	GetByCategoryID(ctx context.Context, categoryID *uuid.UUID, userID *uuid.UUID) ([]*SessionResponse, error)
 	Update(ctx context.Context, sessionID *uuid.UUID, userID *uuid.UUID, req *UpdateSessionRequest) (*uuid.UUID, error)
 	Delete(ctx context.Context, sessionID *uuid.UUID, userID *uuid.UUID) error
+	GetMinutesBySessionForUser(ctx context.Context, userID *uuid.UUID) ([]SessionsMinutes, error)
 }
 
 type service struct {
@@ -107,4 +108,13 @@ func (s *service) Update(ctx context.Context, sessionID *uuid.UUID, userID *uuid
 
 func (s *service) Delete(ctx context.Context, sessionID *uuid.UUID, userID *uuid.UUID) error {
 	return s.repo.Delete(ctx, *sessionID, *userID)
+}
+
+func (s *service) GetMinutesBySessionForUser(ctx context.Context, userID *uuid.UUID) ([]SessionsMinutes, error) {
+	res, err := s.repo.GetMinutesBySessionForUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

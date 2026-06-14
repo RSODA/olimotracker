@@ -29,6 +29,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		sessions.GET("/by-category/:id", h.GetByCategoryID)
 		sessions.PATCH("/:id", h.Update)
 		sessions.DELETE("/:id", h.Delete)
+		sessions.GET("/by-session/minutes", h.GetMinutesBySessionForUser)
 	}
 }
 
@@ -167,4 +168,20 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "session deleted successfully"})
+}
+
+func (h *Handler) GetMinutesBySessionForUser(c *gin.Context) {
+	userID, ok := c.Get("userID")
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "userID not found in context"})
+		return
+	}
+
+	res, err := h.s.GetMinutesBySessionForUser(c.Request.Context(), userID.(*uuid.UUID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
 }
