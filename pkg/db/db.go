@@ -43,16 +43,17 @@ const (
 	// user_stats table
 	UserStatsTable = "user_stats"
 
-	UserStatsIDColumn            = "id"
-	UserStatsUserIDColumn        = "user_id"
-	UserStatsTotalHoursColumn    = "total_hour"
-	UserStatsXPColumn            = "xp"
-	UserStatsLevelColumn         = "level"
-	UserStatsCurrentStreakColumn = "current_streak"
-	UserStatsMaxStreakColumn     = "max_streak"
-	UserStatsGalaxySeedColumn    = "galaxy_seed"
-	UserStatsCreatedAtColumn     = "created_at"
-	UserStatsUpdatedAtColumn     = "updated_at"
+	UserStatsIDColumn             = "id"
+	UserStatsUserIDColumn         = "user_id"
+	UserStatsTotalHoursColumn     = "total_hour"
+	UserStatsXPColumn             = "xp"
+	UserStatsLevelColumn          = "level"
+	UserStatsCurrentStreakColumn  = "current_streak"
+	UserStatsMaxStreakColumn      = "max_streak"
+	UserStatsGalaxySeedColumn     = "galaxy_seed"
+	UserStatsLastSessionsAtColumn = "last_session_at"
+	UserStatsCreatedAtColumn      = "created_at"
+	UserStatsUpdatedAtColumn      = "updated_at"
 )
 
 type DBClient interface {
