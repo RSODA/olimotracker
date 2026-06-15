@@ -18,7 +18,7 @@ type Repository interface {
 	GetByCategoryID(ctx context.Context, categoryID uuid.UUID, userID uuid.UUID) ([]*SessionResponse, error)
 	Update(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID, session *Session) (*uuid.UUID, error)
 	Delete(ctx context.Context, sessionID uuid.UUID, userID uuid.UUID) error
-	GetMinutesByCategoryForUser(ctx context.Context, userID *uuid.UUID) ([]CategoryMinutes, error)
+	GetSessionsForCategory(ctx context.Context, userID *uuid.UUID) (map[Category][]SessionsMinutes, error)
 	GetMinutesBySessionForUser(ctx context.Context, userID *uuid.UUID) ([]SessionsMinutes, error)
 }
 
@@ -207,13 +207,13 @@ func (r *repository) Delete(ctx context.Context, sessionID uuid.UUID, userID uui
 	return nil
 }
 
-func (r *repository) GetMinutesByCategoryForUser(ctx context.Context, userID *uuid.UUID) ([]CategoryMinutes, error) {
-	builder := squirrel.Select(fmt.Sprintf("c.%v, c.%v, c.%v, SUM(s.%v) AS minutes", db.CategoriesIDColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn, db.SessionsDurationColumn)).
-		From(db.SessionsTable + " s").
-		Where(squirrel.Eq{"s." + db.SessionsUserIDColumn: *userID}).
-		Join(fmt.Sprintf("%v c ON s.%v = c.%v", db.CategoriesTable, db.SessionsCategoryIDColumn, db.CategoriesIDColumn)).
-		PlaceholderFormat(squirrel.Dollar).
-		GroupBy(fmt.Sprintf("c.%v, c.%v, c.%v", db.CategoriesIDColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn))
+func (r *repository) GetSessionsForCategory(ctx context.Context, userID *uuid.UUID) (map[Category][]SessionsMinutes, error) {
+	builder := squirrel.Select(fmt.Sprintf("c.%v, c.%v, c.%v, s.%v, s.%v, s.%v, s.%v, s.%v", db.CategoriesIDColumn, db.CategoriesTitleColumn, db.CategoriesColorColumn,
+		db.SessionsIDColumn, db.SessionsCategoryIDColumn, db.SessionsNotesColumn, db.SessionsDurationColumn, db.SessionsCreatedAtColumn)).
+		From(db.CategoriesTable + " c").
+		Join(fmt.Sprintf("%v s ON c.%v = s.%v", db.SessionsTable, db.CategoriesIDColumn, db.SessionsCategoryIDColumn)).
+		Where(squirrel.Eq{"c." + db.SessionsUserIDColumn: userID}).
+		PlaceholderFormat(squirrel.Dollar)
 
 	query, args, err := builder.ToSql()
 	if err != nil {
@@ -228,26 +228,15 @@ func (r *repository) GetMinutesByCategoryForUser(ctx context.Context, userID *uu
 	}
 	defer rows.Close()
 
-	var result []CategoryMinutes
+	result := make(map[Category][]SessionsMinutes)
 	for rows.Next() {
-		var categoryTitle string
-		var categoryID uuid.UUID
-		var categoryColor string
-		var minutes int
-		if err := rows.Scan(&categoryID, &categoryTitle, &categoryColor, &minutes); err != nil {
+		category := Category{}
+		sessions := SessionsMinutes{}
+		if err := rows.Scan(&category.CategoryID, &category.CategoryTitle, &category.CategoryColor, &sessions.SessionsID, &sessions.CategoryID, &sessions.Notes, &sessions.Minutes, &sessions.Date); err != nil {
 			r.l.Error("error scanning row: ", "err", err)
 			return nil, err
 		}
-		result = append(result, CategoryMinutes{
-			CategoryID:    categoryID,
-			CategoryTitle: categoryTitle,
-			CategoryColor: categoryColor,
-			Minutes:       minutes,
-		})
-	}
-	if err := rows.Err(); err != nil {
-		r.l.Error("error iterating rows: ", "err", err)
-		return nil, err
+		result[category] = append(result[category], sessions)
 	}
 
 	return result, nil

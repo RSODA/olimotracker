@@ -14,6 +14,8 @@ type Service interface {
 	AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuration int, newDuration int) error
 	RecalculateStats(ctx context.Context, userID *uuid.UUID, sessionDuration int) error
 	GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStatsResponse, error)
+	UpdateStreaks(ctx context.Context) error
+	UpdateGoal(ctx context.Context, userID *uuid.UUID, goal int64) error
 }
 
 type service struct {
@@ -65,10 +67,21 @@ func (s *service) RecalculateStats(ctx context.Context, userID *uuid.UUID, sessi
 		Level:         level,
 		CurrentStreak: newStreak,
 		MaxStreak:     maxStreak,
+		IsStudyToday:  true,
 		LastSessionAt: &now,
 	})
 	if err != nil {
 		s.l.Error("error updating stats", "userID", userID, "error", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) UpdateGoal(ctx context.Context, userID *uuid.UUID, goal int64) error {
+	err := s.repo.UpdateGoal(ctx, userID, goal)
+	if err != nil {
+		s.l.Error("error updating goal", "userID", userID, "error", err)
 		return err
 	}
 
@@ -93,8 +106,10 @@ func (s *service) GetByUserID(ctx context.Context, userID *uuid.UUID) (*UserStat
 		TotalMinutes:  stats.TotalMinutes,
 		XP:            stats.XP,
 		Level:         stats.Level,
+		IsStudyToday:  stats.IsStudyToday,
 		CurrentStreak: stats.CurrentStreak,
 		MaxStreak:     stats.MaxStreak,
+		Goal:          stats.Goal,
 		GalaxySeed:    stats.GalaxySeed,
 		LastSessionAt: stats.LastSessionAt,
 	}
@@ -138,26 +153,26 @@ func (s *service) AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuratio
 	return nil
 }
 
+func (s *service) UpdateStreaks(ctx context.Context) error {
+	err := s.repo.UpdateStreaks(ctx)
+	if err != nil {
+		s.l.Error("error updating streaks", "err", err)
+		return err
+	}
+
+	return nil
+}
+
 func calcStreak(stats *UserStats) int {
-	moscow := time.FixedZone("Moscow", 3*60*60)
-	now := time.Now().In(moscow)
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, moscow)
-	yestardayStart := todayStart.Add(-24 * time.Hour)
+	if !stats.IsStudyToday {
+		if stats.LastSessionAt == nil {
+			return 1
+		}
 
-	if stats.LastSessionAt == nil {
-		return 1
-	}
-
-	last := stats.LastSessionAt.In(moscow)
-
-	if !last.Before(todayStart) {
-		return stats.CurrentStreak
-	}
-	if !last.Before(yestardayStart) {
 		return stats.CurrentStreak + 1
 	}
 
-	return 1
+	return stats.CurrentStreak
 }
 
 func levelLogic(xp int) int {

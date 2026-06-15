@@ -102,7 +102,7 @@ func main() {
 
 	c := cron.New()
 
-	cron := cr.NewCron(c, log, galaxyService)
+	cron := cr.NewCron(c, log, galaxyService, statsService)
 	cron.AddsCronJobs()
 
 	c.Start()
