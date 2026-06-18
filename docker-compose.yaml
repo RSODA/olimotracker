@@ -10,6 +10,23 @@ services:
       - "${PG_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - "${HTTP_PORT}:8080"
+    depends_on:
+      pg:
+        condition: service_healthy
 
 volumes:
   pgdata:

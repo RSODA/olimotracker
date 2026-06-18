@@ -104,6 +104,7 @@ func (r *repo) Update(ctx context.Context, stats *UserStats) error {
 		Set(db.UserStatsMaxStreakColumn, stats.MaxStreak).
 		Set(db.UserStatsLevelColumn, stats.Level).
 		Set(db.UserStatsXPColumn, stats.XP).
+		Set(db.UserStatsIsStudyTodayColumn, stats.IsStudyToday).
 		Set(db.UserStatsLastSessionsAtColumn, stats.LastSessionAt).
 		Set(db.UserStatsUpdatedAtColumn, time.Now()).
 		Where(squirrel.Eq{db.UserStatsUserIDColumn: stats.UserID}).
