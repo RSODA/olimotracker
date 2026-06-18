@@ -48,10 +48,12 @@ const (
 	UserStatsTotalHoursColumn     = "total_hour"
 	UserStatsXPColumn             = "xp"
 	UserStatsLevelColumn          = "level"
+	UserStatsIsStudyTodayColumn   = "is_study_today"
 	UserStatsCurrentStreakColumn  = "current_streak"
 	UserStatsMaxStreakColumn      = "max_streak"
 	UserStatsGalaxySeedColumn     = "galaxy_seed"
 	UserStatsLastSessionsAtColumn = "last_session_at"
+	UserStatsGoalColumn           = "goal"
 	UserStatsCreatedAtColumn      = "created_at"
 	UserStatsUpdatedAtColumn      = "updated_at"
 )

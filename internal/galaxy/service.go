@@ -31,7 +31,7 @@ func NewService(statsService stats.Service, sessionsRepo sessions.Repository, l 
 }
 
 func (s *service) GetGalaxy(ctx context.Context, userID *uuid.UUID) (*GalaxyResponse, error) {
-	categories, err := s.sessionsRepo.GetMinutesByCategoryForUser(ctx, userID)
+	grouped, err := s.sessionsRepo.GetSessionsForCategory(ctx, userID)
 	if err != nil {
 		s.l.Error("failed to get minutes by category for user", "error", err)
 		return nil, err
@@ -43,13 +43,22 @@ func (s *service) GetGalaxy(ctx context.Context, userID *uuid.UUID) (*GalaxyResp
 		return nil, err
 	}
 
+	result := make([]CategorySessions, 0, len(grouped))
+
+	for category, sessions := range grouped {
+		result = append(result, CategorySessions{
+			Category: category,
+			Sessions: sessions,
+		})
+	}
+
 	return &GalaxyResponse{
-		Seed:          stats.GalaxySeed,
-		TotalMinutes:  stats.XP,
-		CurrentStreak: stats.CurrentStreak,
-		MaxStreak:     stats.MaxStreak,
-		Level:         stats.Level,
-		Categories:    categories,
+		Seed:             stats.GalaxySeed,
+		TotalMinutes:     stats.XP,
+		CurrentStreak:    stats.CurrentStreak,
+		MaxStreak:        stats.MaxStreak,
+		Level:            stats.Level,
+		CategorySessions: result,
 	}, nil
 }
 

@@ -17,16 +17,20 @@ type SessionResponse struct {
 	CreatedAt     time.Time  `json:"created_at"`
 }
 
-type CategoryMinutes struct {
+type CategorySessions map[Category][]SessionsMinutes
+
+type Category struct {
 	CategoryID    uuid.UUID
 	CategoryTitle string
 	CategoryColor string
-	Minutes       int
 }
 
 type SessionsMinutes struct {
-	Minutes int       `json:"minutes"`
-	Date    time.Time `json:"date"`
+	SessionsID uuid.UUID `json:"sessions_id"`
+	Notes      *string   `json:"notes,omitempty"`
+	CategoryID uuid.UUID `json:"category_id"`
+	Minutes    int       `json:"minutes"`
+	Date       time.Time `json:"date"`
 }
 
 type Session struct {
