@@ -7,8 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o olimotracker ./cmd/main
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o olimotracker ./cmd/main
 
 FROM alpine:3.23
 
