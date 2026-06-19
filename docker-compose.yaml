@@ -19,7 +19,11 @@ services:
   app:
     image: ghcr.io/rsoda/olimotracker:latest
     restart: always
-    environment: ...
+    env_file:
+      - .env
+    environment:
+      PG_HOST: pg
+      HTTP_HOST: 0.0.0.0
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
     depends_on:
