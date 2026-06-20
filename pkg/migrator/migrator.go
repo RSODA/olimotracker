@@ -18,7 +18,7 @@ func NewMigrator(db *sql.DB) *Migrator {
 }
 
 func (m *Migrator) Up() error {
-	err := goose.Up(m.db, "/migrations")
+	err := goose.Up(m.db, "/app/migrations")
 	if err != nil {
 		log.Print("err migration up: ", err)
 		return err
