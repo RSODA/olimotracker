@@ -65,7 +65,7 @@ func main() {
 		log.Error("migration failed", "err", err)
 		panic(err)
 	}
-	sqlDB.Close()
+	defer sqlDB.Close()
 
 	err = mig.Up()
 	if err != nil {
