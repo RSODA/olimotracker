@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"olimotracker/config"
 	"olimotracker/internal/api"
 	"olimotracker/internal/auth"
@@ -15,6 +16,7 @@ import (
 	"olimotracker/pkg/jwttoken"
 	"olimotracker/pkg/logger"
 	"olimotracker/pkg/middleware"
+	"olimotracker/pkg/migrator"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -49,6 +51,24 @@ func main() {
 	if err != nil {
 		log.Error("postgres ping", "error", err)
 		panic(err)
+	}
+
+	sqlDB, err := sql.Open("pgx", cfg.Postgres.DSN())
+	if err != nil {
+		log.Error("failed to open db for migrations", "err", err)
+		panic(err)
+	}
+	mig := migrator.NewMigrator(sqlDB)
+	if err := mig.Up(); err != nil {
+		log.Error("migration failed", "err", err)
+		panic(err)
+	}
+	sqlDB.Close()
+
+	err = mig.Up()
+	if err != nil {
+		log.Error("failed UP migrations", "err", err)
+		return
 	}
 
 	log.Info("postgres ping success")
