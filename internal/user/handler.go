@@ -18,8 +18,8 @@ func NewHandler(service Service, mw *middleware.Middleware) *handler {
 }
 
 func (h *handler) RegisterRoutes(r *gin.Engine) {
-	r.GET("user/me", h.mw.AuthMiddleware(), h.GetUserByID)
-	r.PUT("user/me/api", h.mw.AuthMiddleware(), h.UpdateAPIByID)
+	r.GET("/user/me", h.mw.AuthMiddleware(), h.GetUserByID)
+	r.PUT("/user/me/api", h.mw.AuthMiddleware(), h.UpdateAPIByID)
 }
 
 func (h *handler) GetUserByID(c *gin.Context) {

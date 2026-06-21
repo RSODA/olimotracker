@@ -23,8 +23,8 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	sessions := r.Group("/sessions")
 	sessions.Use(h.mw.AuthMiddleware())
 	{
-		sessions.POST("/", h.Create)
-		sessions.GET("/", h.GetByUserID)
+		sessions.POST("", h.Create)
+		sessions.GET("", h.GetByUserID)
 		sessions.GET("/:id", h.GetByID)
 		sessions.GET("/by-category/:id", h.GetByCategoryID)
 		sessions.PATCH("/:id", h.Update)

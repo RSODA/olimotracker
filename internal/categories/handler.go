@@ -163,8 +163,8 @@ func (h *handler) Delete(c *gin.Context) {
 func (h *handler) RegisterRoutes(r *gin.Engine) {
 	catergories := r.Group("/categories")
 	{
-		catergories.POST("/", h.mw.AuthMiddleware(), h.Create)
-		catergories.GET("/", h.mw.AuthMiddleware(), h.GetCategoriesByUserID)
+		catergories.POST("", h.mw.AuthMiddleware(), h.Create)
+		catergories.GET("", h.mw.AuthMiddleware(), h.GetCategoriesByUserID)
 		catergories.GET("/:id", h.mw.AuthMiddleware(), h.GetCategoryByID)
 		catergories.PUT("/:id", h.mw.AuthMiddleware(), h.Update)
 		catergories.DELETE("/:id", h.mw.AuthMiddleware(), h.Delete)
@@ -174,6 +174,6 @@ func (h *handler) RegisterRoutes(r *gin.Engine) {
 func (h *handler) RegisterAPIRoutes(r *gin.RouterGroup) {
 	categories := r.Group("/categories")
 	{
-		categories.GET("/", h.GetCategoriesByUserID)
+		categories.GET("", h.GetCategoriesByUserID)
 	}
 }
