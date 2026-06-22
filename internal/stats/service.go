@@ -130,7 +130,7 @@ func (s *service) AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuratio
 		newXp = 0
 	}
 
-	newTotalMinutes := stats.TotalMinutes + newDuration
+	newTotalMinutes := stats.TotalMinutes + diff
 	if newTotalMinutes < 0 {
 		newTotalMinutes = 0
 	}

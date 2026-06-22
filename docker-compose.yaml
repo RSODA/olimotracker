@@ -17,15 +17,13 @@ services:
       retries: 5
 
   app:
-    image: ghcr.io/rsoda/olimotracker:latest
-    restart: always
-    env_file:
-      - .env
-    environment:
-      PG_HOST: pg
-      HTTP_HOST: 0.0.0.0
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
     ports:
-      - "${HTTP_PORT}:${HTTP_PORT}"
+      - "${HTTP_PORT}:8080"
     depends_on:
       pg:
         condition: service_healthy

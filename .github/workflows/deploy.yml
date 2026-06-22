@@ -42,3 +42,4 @@ jobs:
             cd /home/deploy/olimotracker
             docker compose pull
             docker compose up -d
+            docker cp .env olimotracker-app-1:/app/.env
