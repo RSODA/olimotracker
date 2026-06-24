@@ -37,7 +37,7 @@ func (s *service) RecalculateStats(ctx context.Context, userID *uuid.UUID, sessi
 			xp := sessionDuration
 			level := levelLogic(xp)
 
-			err := s.repo.Create(ctx, &UserStats{UserID: *userID, XP: xp, Level: level, CurrentStreak: 1, MaxStreak: 1})
+			err := s.repo.Create(ctx, &UserStats{UserID: *userID, XP: xp, Level: level, CurrentStreak: 1, MaxStreak: 1, IsStudyToday: true})
 			if err != nil {
 				s.l.Error("error creating stats", "userID", userID, "error", err)
 				return err
@@ -141,6 +141,7 @@ func (s *service) AdjustStats(ctx context.Context, userID *uuid.UUID, oldDuratio
 		XP:            newXp,
 		Level:         levelLogic(newXp),
 		CurrentStreak: stats.CurrentStreak,
+		IsStudyToday:  true,
 		MaxStreak:     stats.MaxStreak,
 		LastSessionAt: stats.LastSessionAt,
 	})

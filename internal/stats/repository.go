@@ -34,7 +34,7 @@ func NewRepo(db db.DBClient, l *slog.Logger) Repository {
 func (r *repo) GetByUserID(ctx context.Context, id *uuid.UUID) (*UserStats, error) {
 	var res UserStats
 
-	builder := squirrel.Select(fmt.Sprintf("us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, u.%v", db.UserStatsUserIDColumn, db.UserStatsTotalHoursColumn, db.UserStatsCurrentStreakColumn, db.UserStatsMaxStreakColumn, db.UserStatsLevelColumn, db.UserStatsXPColumn, db.UserStatsCreatedAtColumn, db.UserStatsUpdatedAtColumn, db.UserStatsLastSessionsAtColumn, db.UserStatsGoalColumn, db.UsersUsernameColumn)).
+	builder := squirrel.Select(fmt.Sprintf("us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, us.%v, u.%v, us.%v", db.UserStatsUserIDColumn, db.UserStatsTotalHoursColumn, db.UserStatsCurrentStreakColumn, db.UserStatsMaxStreakColumn, db.UserStatsLevelColumn, db.UserStatsXPColumn, db.UserStatsCreatedAtColumn, db.UserStatsUpdatedAtColumn, db.UserStatsLastSessionsAtColumn, db.UserStatsGoalColumn, db.UsersUsernameColumn, db.UserStatsIsStudyTodayColumn)).
 		From(db.UserStatsTable + " us").
 		LeftJoin(fmt.Sprintf("%v u ON u.%v = us.%v", db.UsersTable, db.UsersIDColumn, db.UserStatsUserIDColumn)).
 		Where(squirrel.Eq{"us." + db.UserStatsUserIDColumn: id}).
@@ -46,7 +46,7 @@ func (r *repo) GetByUserID(ctx context.Context, id *uuid.UUID) (*UserStats, erro
 		return nil, err
 	}
 
-	err = r.db.QueryRow(ctx, query, args...).Scan(&res.UserID, &res.TotalMinutes, &res.CurrentStreak, &res.MaxStreak, &res.Level, &res.XP, &res.CreatedAt, &res.UpdatedAt, &res.LastSessionAt, &res.Goal, &res.Username)
+	err = r.db.QueryRow(ctx, query, args...).Scan(&res.UserID, &res.TotalMinutes, &res.CurrentStreak, &res.MaxStreak, &res.Level, &res.XP, &res.CreatedAt, &res.UpdatedAt, &res.LastSessionAt, &res.Goal, &res.Username, &res.IsStudyToday)
 	if err != nil {
 		r.l.Error("error scanning row: ", "err", err)
 		return nil, err
